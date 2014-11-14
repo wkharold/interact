@@ -1,4 +1,5 @@
 # Copyright (c) 2012 Alex Suraci
+
 module Interactive
   EVENTS = {
     "\b" => :backspace,

@@ -181,6 +181,80 @@ describe "asking" do
         x.answer.should == "C"
         x.output.should == "1: A\n2: B\n3: C\nFoo?: \nFoo?: C\n"
       end
+
+      ask_faked("1,3-5,7\n2\n", "Foo?",
+                :choices => "A".."G", :indexed => true) do |x|
+        x.answer.should == "B"
+        x.output.should == "1: A\n2: B\n3: C\n4: D\n5: E\n6: F\n7: G\nFoo?: 1,3-5,7\nUnknown answer, please try again!\nFoo?: 2\n"
+      end
+    end
+
+    it "allows a user to select a range of items from a listing view" do
+      ask_faked("1-3\n", "Foo?",
+                :choices => "A".."C", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [1,2,3]
+        x.output.should == "1: A\n2: B\n3: C\nFoo?: 1-3\n"
+      end
+
+      ask_faked("1,3\n", "Foo?",
+                :choices => "A".."C", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [1,3]
+        x.output.should == "1: A\n2: B\n3: C\nFoo?: 1,3\n"
+      end
+
+      ask_faked("3\n", "Foo?",
+                :choices => "A".."C", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == "C"
+        x.output.should == "1: A\n2: B\n3: C\nFoo?: 3\n"
+      end
+
+      ask_faked("1,3,4-6\n", "Foo?",
+                :choices => "A".."G", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [1,3,4,5,6]
+        x.output.should == "1: A\n2: B\n3: C\n4: D\n5: E\n6: F\n7: G\nFoo?: 1,3,4-6\n"
+      end
+
+      ask_faked("1,3-5,7\n", "Foo?",
+                :choices => "A".."G", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [1,3,4,5,7]
+        x.output.should == "1: A\n2: B\n3: C\n4: D\n5: E\n6: F\n7: G\nFoo?: 1,3-5,7\n"
+      end
+
+      ask_faked("1-3,2-5,7\n", "Foo?",
+                :choices => "A".."G", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [1,2,3,4,5,7]
+        x.output.should == "1: A\n2: B\n3: C\n4: D\n5: E\n6: F\n7: G\nFoo?: 1-3,2-5,7\n"
+      end
+    end
+
+    it "handles invalid range selections" do
+      ask_faked("2,4\n2,3\n", "Foo?",
+                :choices => "A".."C", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [2,3]
+        x.output.should == "1: A\n2: B\n3: C\nFoo?: 2,4\nInvalid selection: 2,4\nFoo?: 2,3\n"
+      end
+
+      ask_faked("3-9\n2-4\n", "Foo?",
+                :choices => "A".."G", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == [2,3,4]
+        x.output.should == "1: A\n2: B\n3: C\n4: D\n5: E\n6: F\n7: G\nFoo?: 3-9\nInvalid selection: 3-9\nFoo?: 2-4\n"
+      end
+
+      ask_faked("B,C""\n2\n", "Foo?",
+                :choices => "A".."C", :indexed => true, :allow_multi => true) do |x|
+        x.answer.should == "B"
+        x.output.should == "1: A\n2: B\n3: C\nFoo?: B,C\nInvalid choice B,C please use the index numbers\nFoo?: 2\n"
+      end
+    end
+
+    it "infers :indexed if :allow_multi is specified" do
+      ask_faked("1,3-5,7\n", "Foo?",
+                :choices => "A".."G", :allow_multi => true) do |x|
+        x.answer.should == [1,3,4,5,7]
+        x.output.should == "1: A\n2: B\n3: C\n4: D\n5: E\n6: F\n7: G\nFoo?: 1,3-5,7\n"
+      end
     end
   end
 end
+
+

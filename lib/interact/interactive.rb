@@ -270,6 +270,8 @@ module Interactive
         puts "Please disambiguate: #{matches_list}?"
 
         [false, nil]
+      elsif options[:allow_multi]
+        expand_multi_choice(options[:choices].to_a.size, ans)
       elsif options[:allow_other]
         [true, ans]
       else
@@ -282,11 +284,53 @@ module Interactive
   end
 
   def list_choices(choices, options = {})
+    options[:indexed] = true if options[:allow_multi]
+
     return unless options[:indexed]
 
     choices.each_with_index do |o, i|
       puts "#{i + 1}: #{show_choice(o, options)}"
     end
+  end
+
+  def expand_multi_choice(max_choice, choice)
+    selection = []
+    choices = choice.split(',')
+    choices.each do |c|
+      case
+        when is_number?(c) then
+          selection.push(c.to_i)
+        when is_range?(c) then
+          expand_range(c).each {|rv| selection.push(rv) unless selection.include? rv}
+        else
+          puts "Invalid choice #{choice} please use the index numbers"
+          return [false, nil]
+      end
+    end
+    if valid_range?(max_choice, selection)
+      [true, selection]
+    else
+      puts "Invalid selection: #{choice}"
+      [false, nil]
+    end
+  end
+
+  def expand_range(range)
+    m = /([[:digit:]])+-([[:digit:]])+/.match(range)
+    (m[1].to_i..m[2].to_i).to_a
+  end
+
+  def is_number? s
+    true if Integer(s) rescue false
+  end
+
+  def is_range?(s)
+    m = /([[:digit:]])+-([[:digit:]])+/.match(s)
+    (m == nil) ? false : m[1].to_i < m[2].to_i
+  end
+
+  def valid_range?(max, rng)
+    rng.select {|rv| rv <= 0 || rv > max}.length == 0
   end
 
   def show_choice(choice, options = {})
